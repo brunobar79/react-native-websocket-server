@@ -13,7 +13,6 @@ export default class WebsocketServer {
      */
     start () {
         RNWebsocketServer.start(this.ipAddress, this.port);
-        console.log('STARTED SERVER AT ', this.ipAddress, this.port);
         this.eventEmitter = new NativeEventEmitter(RNWebsocketServer);
     }
 
