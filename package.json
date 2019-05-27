@@ -1,16 +1,41 @@
 {
-  "name": "react-native-websocket-server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "_from": "git+https://github.com/whizdummy/react-native-websocket-server.git",
+  "_id": "react-native-websocket-server@1.0.0",
+  "_inBundle": false,
+  "_integrity": "",
+  "_location": "/react-native-websocket-server",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "git",
+    "raw": "https://github.com/whizdummy/react-native-websocket-server",
+    "rawSpec": "https://github.com/whizdummy/react-native-websocket-server",
+    "saveSpec": "git+https://github.com/whizdummy/react-native-websocket-server.git",
+    "fetchSpec": "https://github.com/whizdummy/react-native-websocket-server.git",
+    "gitCommittish": null
   },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "git+https://github.com/whizdummy/react-native-websocket-server.git#eece1282ee2cc0b48821ea3b9680b367d4ed470e",
+  "_spec": "https://github.com/whizdummy/react-native-websocket-server",
+  "_where": "/Users/bruno/repos/ws",
+  "author": {
+    "name": "djfable02"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "## Getting started",
   "keywords": [
     "react-native",
     "websocket",
     "server"
   ],
-  "author": "djfable02",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "index.js",
+  "name": "react-native-websocket-server",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
 }

@@ -1,4 +1,4 @@
-//  Copyright 2014 Zwopple Limited
+//  Copyright 2014-Present Zwopple Limited
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -35,8 +35,9 @@ typedef NS_ENUM(NSInteger, PSWebSocketReadyState) {
 - (void)webSocket:(PSWebSocket *)webSocket didReceiveMessage:(id)message;
 - (void)webSocket:(PSWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean;
 @optional
-- (void)webSocketIsHungry:(PSWebSocket *)webSocket;
-- (BOOL)webSocket:(PSWebSocket *)webSocket validateServerTrust: (SecTrustRef)trust;
+- (void)webSocketDidFlushInput:(PSWebSocket *)webSocket;
+- (void)webSocketDidFlushOutput:(PSWebSocket *)webSocket;
+- (BOOL)webSocket:(PSWebSocket *)webSocket evaluateServerTrust:(SecTrustRef)trust;
 @end
 
 /**
@@ -55,20 +56,19 @@ typedef NS_ENUM(NSInteger, PSWebSocketReadyState) {
  */
 + (BOOL)isWebSocketRequest:(NSURLRequest *)request;
 
-+ (NSData*) peerAddressOfStream: (NSInputStream*)inputStream;
-
 #pragma mark - Properties
 
+@property (nonatomic, strong, readonly) NSURLRequest *request;
 @property (nonatomic, assign, readonly) PSWebSocketReadyState readyState;
 @property (nonatomic, weak) id <PSWebSocketDelegate> delegate;
 @property (nonatomic, strong) dispatch_queue_t delegateQueue;
 
-@property (nonatomic, strong, readonly) NSURLRequest* URLRequest;
 @property (nonatomic, strong, readonly) NSData* remoteAddress;
 @property (nonatomic, strong, readonly) NSString* remoteHost;
 @property (nonatomic, strong) NSArray* SSLClientCertificates;
 
-@property (nonatomic, strong) NSString* protocol;
+@property (nonatomic, assign, getter=isInputPaused) BOOL inputPaused;
+@property (nonatomic, assign, getter=isOutputPaused) BOOL outputPaused;
 
 #pragma mark - Initialization
 
@@ -90,7 +90,9 @@ typedef NS_ENUM(NSInteger, PSWebSocketReadyState) {
  *
  *  @return an initialized instance of PSWebSocket in server mode
  */
-+ (instancetype)serverSocketWithRequest:(NSURLRequest *)request inputStream:(NSInputStream *)inputStream outputStream:(NSOutputStream *)outputStream;
++ (instancetype)serverSocketWithRequest:(NSURLRequest *)request
+                            inputStream:(NSInputStream *)inputStream
+                           outputStream:(NSOutputStream *)outputStream;
 
 #pragma mark - Actions
 
@@ -101,13 +103,6 @@ typedef NS_ENUM(NSInteger, PSWebSocketReadyState) {
  *  to initialize the websocket.
  */
 - (void)open;
-
-/**
-  * Setting this property to YES stops the WebSocket from reading data from the TCP stream.
-  * This can be useful for flow control, if messages are arriving faster than the application
-  * can process them, so the messages don't pile up in memory.
-  */
-@property BOOL readPaused;
 
 /**
  *  Send a message over the websocket
@@ -157,5 +152,6 @@ typedef NS_ENUM(NSInteger, PSWebSocketReadyState) {
  *  @param key      property key - see kCFStreamProperty constants
  */
 - (void)setStreamProperty:(CFTypeRef)property forKey:(NSString *)key;
+
 
 @end

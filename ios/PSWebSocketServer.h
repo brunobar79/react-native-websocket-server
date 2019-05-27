@@ -1,4 +1,4 @@
-//  Copyright 2014 Zwopple Limited
+//  Copyright 2014-Present Zwopple Limited
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -31,16 +31,10 @@
 - (void)server:(PSWebSocketServer *)server webSocket:(PSWebSocket *)webSocket didCloseWithCode:(NSInteger)code reason:(NSString *)reason wasClean:(BOOL)wasClean;
 
 @optional
-// Delegate may implement either one of these; variant with response is preferred:
-- (BOOL)server:(PSWebSocketServer *)server
-        acceptWebSocketWithRequest:(NSURLRequest *)request;
-- (BOOL)server:(PSWebSocketServer *)server
-        acceptWebSocketFrom:(NSData*)address
-        withRequest:(NSURLRequest *)request
-        trust:(SecTrustRef)trust
-        response:(NSHTTPURLResponse **)response;
-
-- (void)server:(PSWebSocketServer *)server webSocketIsHungry:(PSWebSocket *)webSocket;
+- (void)server:(PSWebSocketServer *)server webSocketDidFlushInput:(PSWebSocket *)webSocket;
+- (void)server:(PSWebSocketServer *)server webSocketDidFlushOutput:(PSWebSocket *)webSocket;
+- (BOOL)server:(PSWebSocketServer *)server acceptWebSocketWithRequest:(NSURLRequest *)request;
+- (BOOL)server:(PSWebSocketServer *)server acceptWebSocketWithRequest:(NSURLRequest *)request address:(NSData *)address trust:(SecTrustRef)trust response:(NSHTTPURLResponse **)response;
 @end
 
 @interface PSWebSocketServer : NSObject
@@ -49,17 +43,17 @@
 
 @property (nonatomic, weak) id <PSWebSocketServerDelegate> delegate;
 @property (nonatomic, strong) dispatch_queue_t delegateQueue;
-@property (readonly) uint16_t realPort;
 
 #pragma mark - Initialization
 
 + (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port;
 + (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port SSLCertificates:(NSArray *)SSLCertificates;
 
+- (NSArray *)getWebsocketConnections;
+
 #pragma mark - Actions
 
 - (void)start;
 - (void)stop;
-- (NSArray *)getWebsocketConnections;
 
 @end

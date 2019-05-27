@@ -7,7 +7,8 @@
 //
 
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface RNWebsocketServer : NSObject <RCTBridgeModule>
+@interface RNWebsocketServer : RCTEventEmitter <RCTBridgeModule>
 
 @end

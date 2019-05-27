@@ -1,5 +1,4 @@
-import { NativeModules } from 'react-native';
-
+import { NativeModules, NativeEventEmitter } from 'react-native';
 const { RNWebsocketServer } = NativeModules;
 
 export default class WebsocketServer {
@@ -7,12 +6,15 @@ export default class WebsocketServer {
         this.ipAddress = ipAddress;
         this.port = port;
     }
+    
 
     /**
      * Starts websocket server
      */
     start () {
         RNWebsocketServer.start(this.ipAddress, this.port);
+        console.log('STARTED SERVER AT ', this.ipAddress, this.port);
+        this.eventEmitter = new NativeEventEmitter(RNWebsocketServer);
     }
 
     /**

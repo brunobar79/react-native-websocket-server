@@ -1,4 +1,4 @@
-//  Copyright 2014 Zwopple Limited
+//  Copyright 2014-Present Zwopple Limited
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 //  limitations under the License.
 
 #import "PSWebSocketServer.h"
-#import "PSwebSocket.h"
+#import "PSWebSocket.h"
 #import "PSWebSocketDriver.h"
 #import "PSWebSocketInternal.h"
 #import "PSWebSocketBuffer.h"
@@ -68,8 +68,7 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     
     NSArray *_SSLCertificates;
     BOOL _secure;
-
-    bool _isV6Address;
+    
     NSData *_addrData;
     CFSocketContext _socketContext;
     
@@ -91,8 +90,6 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     return [[PSWebSocketNetworkThread sharedNetworkThread] runLoop];
 }
 
-@synthesize realPort=_realPort;
-
 #pragma mark - Initialization
 
 + (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port {
@@ -101,83 +98,7 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
 + (instancetype)serverWithHost:(NSString *)host port:(NSUInteger)port SSLCertificates:(NSArray *)SSLCertificates {
     return [[self alloc] initWithHost:host port:port SSLCertificates:SSLCertificates];
 }
-
-// if "host" is equal to nil or "0.0.0.0" or "::" or any format which means ANY ADDRESS, it will bind to ANY for both IPv4 and IPv6.
 - (instancetype)initWithHost:(NSString *)host port:(NSUInteger)port SSLCertificates:(NSArray *)SSLCertificates {
-//    NSParameterAssert(port);
-//    if((self = [super init])) {
-//        _workQueue = dispatch_queue_create(nil, nil);
-//
-//        // copy SSL certificates
-//        _SSLCertificates = [SSLCertificates copy];
-//        _secure = (_SSLCertificates != nil);
-//
-//        bool isAnyAddress = false;
-//        bool isV6Address = false;
-//        if (host) {
-//            if ([host rangeOfString:@":"].location != NSNotFound) {
-//                isV6Address = true;
-//                if ([host isEqualToString:@"::"]) {
-//                    isAnyAddress = true;
-//                }
-//            } else {
-//                if ([host isEqualToString:@"0.0.0.0"]) {
-//                    isAnyAddress = true;
-//                }
-//            }
-//        } else {
-//            isAnyAddress = true;
-//        }
-//
-//        // create address data
-//        if (isAnyAddress || isV6Address ) { // IPv6 address or address ANY
-//            struct sockaddr_in6 addr;
-//            memset(&addr, 0, sizeof(addr));
-//            addr.sin6_len = sizeof(addr);
-//            addr.sin6_family = AF_INET6;
-//            addr.sin6_port = htons(port);
-//
-//            if (isAnyAddress) {
-//                // A socket at in6addr_any accepts connections from IPv4 addresses too.
-//                addr.sin6_addr = in6addr_any;
-//            } else {
-//                // Note: "0::0:0" or "0:0:0:0:0:0:0:0" will also be bound to ANY(*) even isAnyAddress is false
-//                int ret = inet_pton(AF_INET6, host.UTF8String, &(addr.sin6_addr));
-//                if(ret <= 0) { // only 1 means OK, either 0 or -1 means error
-//                    [NSException raise:@"Invalid host" format:@"Could not formulate internet address from host: %@", host];
-//                    return nil;
-//                }
-//            }
-//
-//            _addrData = [NSData dataWithBytes:&addr length:sizeof(addr)];
-//            _isV6Address = YES;
-//        } else { // IPv4 address
-//            struct sockaddr_in addr;
-//            memset(&addr, 0, sizeof(addr));
-//            addr.sin_len = sizeof(addr);
-//            addr.sin_family = AF_INET;
-//            addr.sin_port = htons(port);
-//
-//            addr.sin_addr.s_addr = inet_addr(host.UTF8String); // "host" is non-null here
-//            if(addr.sin_addr.s_addr == INADDR_NONE) {
-//                [NSException raise:@"Invalid host" format:@"Could not formulate internet address from host: %@", host];
-//                return nil;
-//            }
-//
-//            _addrData = [NSData dataWithBytes:&addr length:sizeof(addr)];
-//        }
-//
-//        // create socket context
-//        _socketContext = (CFSocketContext){0, (__bridge void *)self, NULL, NULL, NULL};
-//
-//        _connections = [NSMutableSet set];
-//        _connectionsByStreams = [NSMapTable weakToWeakObjectsMapTable];
-//
-//        _webSockets = [NSMutableSet set];
-//
-//    }
-//    return self;
-    
     NSParameterAssert(port);
     if((self = [super init])) {
         _workQueue = dispatch_queue_create(nil, nil);
@@ -228,10 +149,6 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     }];
 }
 
-- (NSArray *)getWebsocketConnections {
-    return _webSockets.allObjects;
-}
-
 #pragma mark - Connection
 
 - (void)connect:(BOOL)silent {
@@ -241,7 +158,7 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     
     // create socket
     _socket = CFSocketCreate(kCFAllocatorDefault,
-                             _isV6Address ? PF_INET6 : PF_INET,
+                             PF_INET,
                              SOCK_STREAM,
                              IPPROTO_TCP,
                              kCFSocketAcceptCallBack,
@@ -255,27 +172,21 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     CFSocketError err = CFSocketSetAddress(_socket, (__bridge CFDataRef)_addrData);
     if(err == kCFSocketError) {
         if(!silent) {
-            [self notifyDelegateFailedToStart: errno];
+            [self notifyDelegateFailedToStart:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
         }
         return;
     } else if(err == kCFSocketTimeout) {
         if(!silent) {
-            [self notifyDelegateFailedToStart: ETIME];
+            [self notifyDelegateFailedToStart:[NSError errorWithDomain:NSPOSIXErrorDomain code:ETIME userInfo:nil]];
         }
         return;
     }
-
-    // get port
-    CFDataRef realAddrData = CFSocketCopyAddress(_socket);
-    const struct sockaddr_in *addr = (void*)CFDataGetBytePtr(realAddrData);
-    _realPort = ntohs(addr->sin_port);
-    CFRelease(realAddrData);
     
     // schedule
     _socketRunLoopSource = CFSocketCreateRunLoopSource(kCFAllocatorDefault, _socket, 0);
     
     CFRunLoopRef runLoop = [[self runLoop] getCFRunLoop];
-    CFRunLoopAddSource(runLoop, _socketRunLoopSource, kCFRunLoopDefaultMode);
+    CFRunLoopAddSource(runLoop, _socketRunLoopSource, kCFRunLoopCommonModes);
     
     _running = YES;
     
@@ -307,7 +218,7 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
 - (void)disconnect:(BOOL)silent {
     if(_socketRunLoopSource) {
         CFRunLoopRef runLoop = [[self runLoop] getCFRunLoop];
-        CFRunLoopRemoveSource(runLoop, _socketRunLoopSource, kCFRunLoopDefaultMode);
+        CFRunLoopRemoveSource(runLoop, _socketRunLoopSource, kCFRunLoopCommonModes);
         CFRelease(_socketRunLoopSource);
         _socketRunLoopSource = nil;
     }
@@ -410,8 +321,11 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
     [self detachWebSocket:webSocket];
     [self notifyDelegateWebSocket:webSocket didCloseWithCode:code reason:reason wasClean:wasClean];
 }
-- (void)webSocketIsHungry:(PSWebSocket *)webSocket {
-    [self notifyDelegateWebSocketIsHungry:webSocket];
+- (void)webSocketDidFlushInput:(PSWebSocket *)webSocket {
+    [self notifyDelegateWebSocketDidFlushInput:webSocket];
+}
+- (void)webSocketDidFlushOutput:(PSWebSocket *)webSocket {
+    [self notifyDelegateWebSocketDidFlushOutput:webSocket];
 }
 
 #pragma mark - Connections
@@ -568,12 +482,12 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
 
             // create webSocket
             PSWebSocket *webSocket = [PSWebSocket serverSocketWithRequest:request inputStream:connection.inputStream outputStream:connection.outputStream];
+            webSocket.delegateQueue = _workQueue;
             
             // attach webSocket
             [self attachWebSocket:webSocket];
             
             // open webSocket
-            webSocket.protocol = protocol;
             [webSocket open];
             
             // clean up
@@ -670,8 +584,7 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
         [_delegate serverDidStart:self];
     }];
 }
-- (void)notifyDelegateFailedToStart: (int)err {
-    NSError* error = [NSError errorWithDomain: NSPOSIXErrorDomain code: err userInfo: nil];
+- (void)notifyDelegateFailedToStart:(NSError *)error {
     [self executeDelegate:^{
         [_delegate server:self didFailWithError:error];
     }];
@@ -703,35 +616,40 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
         [_delegate server:self webSocket:webSocket didCloseWithCode:code reason:reason wasClean:wasClean];
     }];
 }
-
-- (void)notifyDelegateWebSocketIsHungry:(PSWebSocket *)webSocket {
-    if ([_delegate respondsToSelector: @selector(server:webSocketIsHungry:)]) {
-        [self executeDelegate:^{
-            [_delegate server:self webSocketIsHungry:webSocket];
-        }];
-    }
+- (void)notifyDelegateWebSocketDidFlushInput:(PSWebSocket *)webSocket {
+    [self executeDelegate:^{
+        if ([_delegate respondsToSelector: @selector(server:webSocketDidFlushInput:)]) {
+            [_delegate server:self webSocketDidFlushInput:webSocket];
+        };
+    }];
 }
-
-- (BOOL) askDelegateShouldAcceptConnection: (PSWebSocketServerConnection*)connection
-                                   request: (NSURLRequest*)request
-                                  response: (NSHTTPURLResponse**)outResponse
-{
+- (void)notifyDelegateWebSocketDidFlushOutput:(PSWebSocket *)webSocket {
+    [self executeDelegate:^{
+        if ([_delegate respondsToSelector: @selector(server:webSocketDidFlushOutput:)]) {
+            [_delegate server:self webSocketDidFlushOutput:webSocket];
+        }
+    }];
+}
+- (BOOL)askDelegateShouldAcceptConnection:(PSWebSocketServerConnection *)connection
+                                  request: (NSURLRequest *)request
+                                 response:(NSHTTPURLResponse **)outResponse {
     __block BOOL accept;
     __block NSHTTPURLResponse* response = nil;
     [self executeDelegateAndWait:^{
-        if ([_delegate respondsToSelector: @selector(server:acceptWebSocketFrom:withRequest:trust:response:)]) {
-            NSData* address = [PSWebSocket peerAddressOfStream: connection.inputStream];
+        if([_delegate respondsToSelector:@selector(server:acceptWebSocketWithRequest:address:trust:response:)]) {
+            NSData* address = PSPeerAddressOfInputStream(connection.inputStream);
             SecTrustRef trust = (SecTrustRef)CFReadStreamCopyProperty(
                                                   (__bridge CFReadStreamRef)connection.inputStream,
                                                   kCFStreamPropertySSLPeerTrust);
             accept = [_delegate server:self
-                   acceptWebSocketFrom:address
-                           withRequest:request
+            acceptWebSocketWithRequest:request
+                               address:address
                                  trust:trust
                               response:&response];
-            if (trust)
+            if(trust) {
                 CFRelease(trust);
-        } else if ([_delegate respondsToSelector: @selector(server:acceptWebSocketWithRequest:)]) {
+            }
+        } else if([_delegate respondsToSelector:@selector(server:acceptWebSocketWithRequest:)]) {
             accept = [_delegate server:self acceptWebSocketWithRequest:request];
         } else {
             accept = YES;
@@ -758,6 +676,10 @@ void PSWebSocketServerAcceptCallback(CFSocketRef s, CFSocketCallBackType type, C
 - (void)executeDelegateAndWait:(void (^)(void))work {
     NSParameterAssert(work);
     dispatch_sync((_delegateQueue) ? _delegateQueue : dispatch_get_main_queue(), work);
+}
+
+- (NSArray *)getWebsocketConnections {
+    return _webSockets.allObjects;
 }
 
 #pragma mark - Dealloc
